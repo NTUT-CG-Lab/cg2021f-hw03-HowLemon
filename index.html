@@ -27,7 +27,7 @@
 			display: block;
 			margin: 10px;
 			padding: 10px;
-			background-color: rgb(255, 160, 160);
+			background-color: rgba(255, 160, 160, 0.576);
 			width: fit-content;
 			border-radius: 10px;
 
@@ -37,6 +37,12 @@
 			width: 100%;
 			padding: 3px;
 		}
+
+		#mode {
+			font-size: 20px;
+			font-weight: bolder;
+			background-color: white;
+		}
 	</style>
 </head>
 
@@ -44,7 +50,8 @@
 	<div id="info"></div>
 	<div id="upload">
 		<label id="mode"></label>
-		<a href="https://ntut-cg-lab.github.io/cg2021f-hw02-HowLemon/" target="_blank">檔案生成</a><br>
+		<br>
+		<a href="https://ntut-cg-lab.github.io/cg2021f-hw02-HowLemon/" target="_blank">請先到HW2生成眼睛範圍檔</a><br>
 		<label>讀取眼睛參數 </label> <input accept="application/json" onchange="openFile()" type="file"><br>
 		<span id="filename">asdf</span>
 		<progress value="0" max="100"></progress>
@@ -67,7 +74,7 @@
 	<script>
 		// 建構子 ScoreOutputer 接受一個字串，該字串為 csv 的檔案名稱
 		// 以下面範例，檔名就為 "109598105(總分: 6).csv"
-		var so = new ScoreOutputer("109598105");
+		var so = new ScoreOutputer("109598110");
 		so.installCSS(function () {
 			// 安裝 bootstrap 的 css，如果在 html 上方引用 bootstrap 5.1.1 的話就不用使用 installCSS ，注意一定要 bootstrap css 5.1.1 版
 			// installCSS 接收一個 callback 當作參數，作為成功安裝 bootstrap css 的回呼函式
@@ -193,6 +200,8 @@
 		}
 
 		document.addEventListener("eyedata", (e) => {
+			variFunction = 0;
+			LineGroup.scale.x = 1;
 			var bounds = e.detail;
 
 			LineGroup.visible = true;
@@ -223,7 +232,6 @@
 
 			camera.position.x = camX;
 			camera.position.y = camY;
-
 			camera2.position.y = camY;
 			camera3.position.y = camY;
 			camera4.position.y = camY;
@@ -376,12 +384,14 @@
 						removeMMD(mesh);
 						break;
 					case '1':
-						variFunction = ((variFunction - 1) % 4 + 4) % 4
+						variFunction = ((variFunction - 1) % 8 + 8) % 8
 						modeInd.innerHTML = indtext[variFunction]
+						if (variFunction == 3 || variFunction == 7) { camera.position.x *= -1; LineGroup.scale.x *= -1 }
 						break;
 					case '2':
-						variFunction = (variFunction + 1) % 4;
+						variFunction = (variFunction + 1) % 8;
 						modeInd.innerHTML = indtext[variFunction]
+						if (variFunction == 0 || variFunction == 4) { camera.position.x *= -1; LineGroup.scale.x *= -1 }
 						break;
 
 					case 'q':
@@ -413,6 +423,8 @@
 			//鏡頭控制
 
 		}
+
+		var lastFun = 0;
 		function downloadObjectAsJson(exportObj, exportName) {
 			var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj));
 			var downloadAnchorNode = document.createElement('a');
@@ -423,7 +435,7 @@
 			downloadAnchorNode.remove();
 		}
 
-		const indtext = ["X-", "X+", "Y-", "Y+"];
+		const indtext = ["RX-", "RX+", "RY-", "RY+", "LX-", "LX+", "LY-", "LY+"];
 
 		const deltaScale = 0.001;
 		const modeInd = document.getElementById("mode");
@@ -450,6 +462,26 @@
 				case 3: //y+
 					if (toggleFollowEye) {
 						eyeOutput.rightYPositive += delta.y * deltaScale;
+					}
+					break;
+				case 4: //x-
+					if (toggleFollowEye) {
+						eyeOutput.leftXNegetive += delta.x * deltaScale;
+					}
+					break;
+				case 5: //x+
+					if (toggleFollowEye) {
+						eyeOutput.leftXPositive += delta.x * deltaScale;
+					}
+					break;
+				case 6: //y-
+					if (toggleFollowEye) {
+						eyeOutput.leftYNegetive += delta.y * deltaScale;
+					}
+					break;
+				case 7: //y+
+					if (toggleFollowEye) {
+						eyeOutput.leftYPositive += delta.y * deltaScale;
 					}
 					break;
 			}
@@ -566,12 +598,35 @@
 						mesh.skeleton.bones[LEyeIndex].rotation.y = 0;
 
 						break;
+					case 4: //x-
+						mesh.skeleton.bones[REyeIndex].rotation.y = eyeOutput.leftXNegetive;
+						mesh.skeleton.bones[REyeIndex].rotation.x = 0;
+
+						break;
+					case 5: //x+
+						mesh.skeleton.bones[REyeIndex].rotation.y = eyeOutput.leftXPositive;
+						mesh.skeleton.bones[REyeIndex].rotation.x = 0;
+
+						break;
+					case 6: //y-
+						mesh.skeleton.bones[REyeIndex].rotation.x = eyeOutput.leftYNegetive;
+						mesh.skeleton.bones[REyeIndex].rotation.y = 0;
+
+						break;
+					case 7: //y+
+						mesh.skeleton.bones[REyeIndex].rotation.x = eyeOutput.leftYPositive;
+						mesh.skeleton.bones[REyeIndex].rotation.y = 0;
+
+						break;
 				}
 			}
 
 
 			effect.setViewport(0, 0, SCREEN_WIDTH / 2, SCREEN_HEIGHT);
 			effect.render(scene, camera);
+
+			if(variFunction == 0 || variFunction == 4) LineGroup.scale.y = 1;
+			else LineGroup.scale.y =0;
 
 			mesh.skeleton.bones[LEyeIndex].rotation.y = eyeOutput.rightXNegetive;
 			mesh.skeleton.bones[LEyeIndex].rotation.x = 0;
@@ -582,6 +637,9 @@
 			effect.setViewport(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
 			effect.render(scene, camera2);
 
+			if(variFunction == 1 || variFunction == 5) LineGroup.scale.y = 1;
+			else LineGroup.scale.y =0;
+
 			mesh.skeleton.bones[LEyeIndex].rotation.y = eyeOutput.rightXPositive;
 			mesh.skeleton.bones[LEyeIndex].rotation.x = 0;
 
@@ -590,6 +648,9 @@
 
 			effect.setViewport(SCREEN_WIDTH / 2 + SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
 			effect.render(scene, camera3);
+
+			if(variFunction == 2 || variFunction == 6) LineGroup.scale.y = 1;
+			else LineGroup.scale.y =0;
 
 			mesh.skeleton.bones[LEyeIndex].rotation.x = eyeOutput.rightYNegetive;
 			mesh.skeleton.bones[LEyeIndex].rotation.y = 0;
@@ -600,6 +661,9 @@
 			effect.setViewport(SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
 			effect.render(scene, camera4);
 
+			if(variFunction == 3 || variFunction == 7) LineGroup.scale.y = 1;
+			else LineGroup.scale.y =0;
+
 			mesh.skeleton.bones[LEyeIndex].rotation.x = eyeOutput.rightYPositive;
 			mesh.skeleton.bones[LEyeIndex].rotation.y = 0;
 
@@ -608,6 +672,7 @@
 
 			effect.setViewport(SCREEN_WIDTH / 2 + SCREEN_WIDTH / 4, 0, SCREEN_WIDTH / 4, SCREEN_HEIGHT / 2);
 			effect.render(scene, camera5);
+			LineGroup.scale.y = 1;
 		}
 
 		const toRemove = []
