@@ -334,12 +334,12 @@
 					mesh = undefined;
 
 					mesh = object;
-					mesh.name = url.match(/(?!\/)[^\/]+\./)[0].slice(0, -1); 
+					mesh.name = url.match(/(?!\/)[^\/]+\./)[0].slice(0, -1);
 
 
-					
-					LEyeIndex = mesh.skeleton.bones.findIndex(e=>e.name=="左目");
-					REyeIndex = mesh.skeleton.bones.findIndex(e=>e.name=="右目");
+
+					LEyeIndex = mesh.skeleton.bones.findIndex(e => e.name == "左目");
+					REyeIndex = mesh.skeleton.bones.findIndex(e => e.name == "右目");
 
 					helper.add(mesh, { physics: true });
 
@@ -393,7 +393,16 @@
 						break;
 					case 's':
 					case 'S':
-					downloadObjectAsJson(eyeOutput, "hw3_output_"+mesh.name)
+						downloadObjectAsJson((() => {
+							var output = {};
+							for (var key in eyeOutput) {
+								if (eyeOutput.hasOwnProperty(key)) {
+									console.log(key + " -> " + THREE.MathUtils.radToDeg(eyeOutput[key]));
+									output[key] = THREE.MathUtils.radToDeg(eyeOutput[key])
+								}
+							}
+							return output;
+						})(), "hw3_output_" + mesh.name)
 						break;
 				}
 			})
